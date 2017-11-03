@@ -32,7 +32,6 @@ int get_port(char* port_as_string, unsigned short* port)  {
 
 
 int main(int argc, char* argv[]) {
-  printf("%lu\n", sizeof(unsigned int));
   if (usage(argc, argv))  {
     printf("Detected wrong usage. Exiting...\n");
     return EXIT_SUCCESS;
