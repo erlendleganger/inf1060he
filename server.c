@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 
 int usage(int argc, char* argv[])  {
+  printf("hei\n");
   if (argc < 3) {
     printf("Usage: %s [serveraddr] [port]\n", argv[0]);
     return 1;
