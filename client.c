@@ -8,13 +8,21 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-#define NUM_KIDS 50
+#define NUM_KIDS 2
 
 int loglevel = 1;
 static const int CHILD_NO_WIN = 0;  /*  Child sends this if it doesnt win    */
 static const int CHILD_WIN = 1;     /*  Child sends this if it wins          */
-static const int GAME_OVER = 0;     /*  Child loses if it receives this      */
+static const char QUIT = 0;     /*  Child loses if it receives this      */
 static const int WINNER = 13;       /*  Child wins if it receives this       */
+
+
+const char *data[] = {
+  "Jeg er streng0",
+  "Jeg er streng1",
+  "Jeg er streng2"
+};
+
 
 
 
@@ -129,33 +137,11 @@ void child_func(const int rpipe, const int wpipe, const size_t child_id){
         else {
             printf("Child %zu read %d from parent.\n", child_id, in_c);
 
-            if ( in_c == GAME_OVER ) {
+            if ( in_c == 'Q' ) {
+              printf("FANT Q\n");
 
-                /*  We lost, so tell loop to end. No need to write()
-                 *  to parent, since it already knows a previous
-                 *  child won.                                        */
 
-                printf("Child %zu got game over signal.\n", child_id);
                 keep_reading = 0;
-            }
-            else {
-                if ( in_c == WINNER ) {
-
-                    /*  We won, so send won signal to parent  */
-
-                    out_c = 1;
-                }
-
-                /*  Write won signal to parent if we won, or
-                 *  other character if we didn't.             */
-
-                if ( write(wpipe, &out_c, 1) == -1 ) {
-                    perror("error writing to pipe in child");
-                    exit(EXIT_FAILURE);
-                }
-                else {
-                    printf("Child %zu wrote %d to parent.\n", child_id, out_c);
-                }
             }
         }
     }
@@ -171,8 +157,7 @@ void child_func(const int rpipe, const int wpipe, const size_t child_id){
 
 
 
-int main(void)
-{
+int main(void)  {
     int ptoc_fd[NUM_KIDS][2];   /*  Parent to child pipes    */
     int ctop_fd[NUM_KIDS][2];   /*  Child to parent pipes    */
     pid_t children[NUM_KIDS];   /*  Process IDs of children  */
@@ -205,15 +190,36 @@ int main(void)
 
     char out_c = 1;
     char in_c = 0;
-    int won = 0;
+    int ferdig = 0;
+    char kommando = 'Q';
 
-    while ( !won ) {
+    while ( !ferdig ) {
 
-        /*  Loop through each child  */
+      //Les kommando fra server
 
-        for ( size_t i = 0; !won && i < NUM_KIDS; ++i ) {
 
-            /*  Write next number to child  */
+      if (kommando == 'O')  {
+        write(ptoc_fd[0][1], &kommando, 1);
+        //send jobb til barn0
+      }
+      else if (kommando == 'E') {
+        //send jobb til barn1
+      }
+      else if (kommando == 'Q') {
+        write(ptoc_fd[0][1], &kommando, 1);
+        write(ptoc_fd[1][1], &kommando, 1);
+        //steng pipes til barn0 og barn1
+        ferdig = 1;
+      }
+      else {
+        perror("Ugyldig kommando.");
+      }
+
+
+      /*
+        for ( size_t i = 0; !ferdig && i < NUM_KIDS; ++i ) {
+
+
 
             if ( write(ptoc_fd[i][1], &out_c, 1) == -1 ) {
                 perror("error writing to pipe");
@@ -226,9 +232,9 @@ int main(void)
             ++out_c;
 
 
-            /*  Read status from child if game not over  */
 
-            if ( !won ) {
+
+            if ( !ferdig ) {
                 ssize_t num_read;
                 if ( (num_read = read(ctop_fd[i][0], &in_c, 1)) == -1 ) {
                     perror("error reading from pipe");
@@ -240,13 +246,13 @@ int main(void)
                 else {
                     printf("Parent read %d from child %zu.\n", in_c, i+1);
                     if ( in_c == CHILD_WIN ) {
-                        printf("Parent got won signal from child %zu.\n", i+1);
-                        won = 1;
+                        printf("Parent got ferdig signal from child %zu.\n", i+1);
+                        ferdig = 1;
                         winning_child = i+1;
                     }
                 }
             }
-        }
+        }*/
     }
 
 
@@ -254,29 +260,15 @@ int main(void)
 
     out_c = 0;
     for ( size_t i = 0; i < NUM_KIDS; ++i ) {
-        if ( write(ptoc_fd[i][1], &out_c, 1) == -1 ) {
-            perror("error writing to pipe");
-            exit(EXIT_FAILURE);
-        }
-        else {
-            printf("Parent wrote %d to child %zu.\n", out_c, i + 1);
-        }
-
         if ( waitpid(children[i], NULL, 0) == -1 ) {
             perror("error calling waitpid()");
             return EXIT_FAILURE;
         }
         else {
-            printf("Successfully waited for child %zu.\n", i + 1);
+            printf("Successfully waited for child %zu.\n", i);
         }
-
         close_pair(ptoc_fd[i][1], ctop_fd[i][0]);
     }
-
-
-    /*  Show who won, and then quit.  */
-
-    printf("Parent terminating. Child %d won.\n", winning_child);
 
     return EXIT_SUCCESS;
 }
