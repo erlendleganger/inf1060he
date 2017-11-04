@@ -11,6 +11,9 @@
 #define NUM_KIDS 2
 
 int loglevel = 1;
+int ptoc_fd[NUM_KIDS][2];   /*  Parent to child pipes    */
+int ctop_fd[NUM_KIDS][2];   /*  Child to parent pipes    */
+pid_t children[NUM_KIDS];   /*  Process IDs of children  */
 
 
 const char *data[] = {
@@ -182,41 +185,29 @@ void child_func(const int rpipe, const int wpipe, const int child_id){
 
 /*  Convenience function to close a pair of file descriptors  */
 
-
-
-int main(void)  {
-    int ptoc_fd[NUM_KIDS][2];   /*  Parent to child pipes    */
-    int ctop_fd[NUM_KIDS][2];   /*  Child to parent pipes    */
-    pid_t children[NUM_KIDS];   /*  Process IDs of children  */
-
-
+int main()  {
+  logger("main: start");
 
     /*  Create pipe pairs and fork children  */
-    logger("main: start");
-
     for ( int i = 0; i < NUM_KIDS; ++i ) {
-        make_pipe_pair(ptoc_fd[i], ctop_fd[i]);
+      make_pipe_pair(ptoc_fd[i], ctop_fd[i]);
 
-        if ( (children[i] = fork()) == -1 ) {
-            perror("error calling fork()");
-            return EXIT_FAILURE;
-        }
-        else if ( children[i] == 0 ) {
-            printf("Child %d created.\n", i + 1);
-            close_pair(ctop_fd[i][0], ptoc_fd[i][1]);
-            child_func(ptoc_fd[i][0], ctop_fd[i][1], i + 1);
-            printf("Child %d terminating.\n", i + 1);
-            return EXIT_SUCCESS;
-        }
-        else {
-            close_pair(ptoc_fd[i][0], ctop_fd[i][1]);
-        }
+      if ( (children[i] = fork()) == -1 ) {
+        perror("error calling fork()");
+        return EXIT_FAILURE;
+      }
+      else if ( children[i] == 0 ) {
+        printf("Child %d created.\n", i + 1);
+        close_pair(ctop_fd[i][0], ptoc_fd[i][1]);
+        child_func(ptoc_fd[i][0], ctop_fd[i][1], i + 1);
+        printf("Child %d terminating.\n", i + 1);
+        return EXIT_SUCCESS;
+      }
+      else {
+        close_pair(ptoc_fd[i][0], ctop_fd[i][1]);
+      }
     }
-
-
     /*  Set up game variables and enter main loop  */
-
-
 
     int ferdig = 0;
     char kommando = 'O';
@@ -224,11 +215,18 @@ int main(void)  {
     int i;
 
     while ( !ferdig ) {
-
       //Les kommando fra server
+
+
+
+
       for (i = 0; i < 3; i++) {
         if (kommando == 'O')  {
           write(ptoc_fd[0][1], &kommando, 1);
+          length = strlen(data[0]);
+          printf("Fikk length: %d\n", length);
+          write(ptoc_fd[0][1], &length, sizeof(length));
+          write(ptoc_fd[0][1], &data[0], length);
         }
         else if (kommando == 'E') {
           //send jobb til barn1
@@ -255,53 +253,10 @@ int main(void)  {
           kommando = 'Q';
         }
       }
-
-
-
-
-      /*
-        for ( int i = 0; !ferdig && i < NUM_KIDS; ++i ) {
-
-
-
-            if ( write(ptoc_fd[i][1], & , 1) == -1 ) {
-                perror("error writing to pipe");
-                exit(EXIT_FAILURE);
-            }
-            else {
-                printf("Parent wrote %d to child %d.\n", out_c, i+1);
-            }
-
-            ++out_c;
-
-
-
-
-            if ( !ferdig ) {
-                int num_read;
-                if ( (num_read = read(ctop_fd[i][0], &in_c, 1)) == -1 ) {
-                    perror("error reading from pipe");
-                    return EXIT_FAILURE;
-                }
-                else if ( num_read == 0 ) {
-                    printf("Pipe from child %d closed.\n", i+1);
-                }
-                else {
-                    printf("Parent read %d from child %d.\n", in_c, i+1);
-                    if ( in_c == CHILD_WIN ) {
-                        printf("Parent got ferdig signal from child %d.\n", i+1);
-                        ferdig = 1;
-                        winning_child = i+1;
-                    }
-                }
-            }
-        }*/
     }
 
 
     /*  Clean up and harvest dead children  */
-
-
     for ( int i = 0; i < NUM_KIDS; ++i ) {
         if ( waitpid(children[i], NULL, 0) == -1 ) {
             perror("error calling waitpid()");
@@ -313,6 +268,5 @@ int main(void)  {
         close_pair(ptoc_fd[i][1], ctop_fd[i][0]);
     }
     logger("main: end");
-
     return EXIT_SUCCESS;
 }
