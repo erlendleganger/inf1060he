@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+int loglevel = 1;
 
 int usage(int argc, char*argv[])  {
   if (argc < 3) {
@@ -31,11 +32,8 @@ int get_port(char* port_as_string, unsigned short* port)  {
   }
 }
 
-int main(int argc, char  *argv[]) {
-  if (usage(argc, argv))  {
-    printf("Detected wrong usage. Exiting...\n");
-    return EXIT_SUCCESS;
-  }
+
+int makeConnection(char* argv[]) {
 
   struct sockaddr_in serveraddr;
   int sock;
@@ -60,4 +58,60 @@ int main(int argc, char  *argv[]) {
   printf("Koblet til! Stenger socket...\n");
   close(sock);
   return EXIT_SUCCESS;
+}
+
+void logger(char* msg)  {
+  if (loglevel != 0)  {
+    printf(">%d< %s\n", getpid(), msg);
+  }
+}
+
+int spawn_child()  {
+  logger("spawn_child: start!");
+  pid_t childPID = fork();
+  if (childPID == -1) {
+    perror("fork() error!\n");
+    exit(-1);
+  }
+  else if (childPID == 0) {
+    logger("spawn_child: end! (am child-process)");
+    return 0;
+  }
+  else  {
+    logger("spawn_child: end! (am parent-process)");
+    return childPID;
+  }
+}
+
+int main() {
+  logger("main: start!");
+  pid_t pid;
+  int mypipefd[2];
+  int ret;
+  char buf[20];
+
+  ret = pipe(mypipefd);
+
+
+  pid = fork();
+
+  if (pid == 0) {
+    logger("child");
+    write(mypipefd[1], "Feels good man", 14);
+    logger("Wrote to buf: Feels good man");
+  }
+  else  {
+    logger("parent");
+    read(mypipefd[0], buf, 15);
+    logger("Read from buf: ");
+    logger(buf);
+  }
+
+
+
+
+
+
+  logger("main: end!");
+  return 0;
 }
