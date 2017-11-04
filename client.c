@@ -11,10 +11,6 @@
 #define NUM_KIDS 2
 
 int loglevel = 1;
-static const int CHILD_NO_WIN = 0;  /*  Child sends this if it doesnt win    */
-static const int CHILD_WIN = 1;     /*  Child sends this if it wins          */
-static const char QUIT = 0;     /*  Child loses if it receives this      */
-static const int WINNER = 13;       /*  Child wins if it receives this       */
 
 
 const char *data[] = {
@@ -161,12 +157,13 @@ int main(void)  {
     int ptoc_fd[NUM_KIDS][2];   /*  Parent to child pipes    */
     int ctop_fd[NUM_KIDS][2];   /*  Child to parent pipes    */
     pid_t children[NUM_KIDS];   /*  Process IDs of children  */
-    int winning_child;          /*  Holds number of winner   */
+
 
 
     /*  Create pipe pairs and fork children  */
+    logger("main: start");
 
-    for ( size_t i = 0; i < NUM_KIDS; ++i ) {
+    for ( int i = 0; i < NUM_KIDS; ++i ) {
         make_pipe_pair(ptoc_fd[i], ctop_fd[i]);
 
         if ( (children[i] = fork()) == -1 ) {
