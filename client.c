@@ -112,32 +112,63 @@ void close_pair(const int rfd, const int wfd) {
   }
 }
 
-void child_func(const int rpipe, const int wpipe, const size_t child_id){
-    char out_c = CHILD_NO_WIN;      /*  Character to write  */
+void child_func(const int rpipe, const int wpipe, const int child_id){
+
     char in_c;                      /*  Character to read   */
+    int length = 0;
     int keep_reading = 1;
+    char* string;
 
     while ( keep_reading ) {
 
         /*  Read a single character from the parent  */
 
-        ssize_t num_read;
+        int num_read;
         if ( (num_read = read(rpipe, &in_c, 1)) == -1 ) {
             perror("error reading from pipe in child");
             exit(EXIT_FAILURE);
         }
         else if ( num_read == 0 ) {
-            printf("Pipe from parent closed to child %zu.\n", child_id);
+            printf("Pipe from parent closed to child %d.\n", child_id);
             keep_reading = 0;
         }
         else {
-            printf("Child %zu read %d from parent.\n", child_id, in_c);
+            printf("Child %d read %c from parent.\n", child_id, in_c);
 
             if ( in_c == 'Q' ) {
-              printf("FANT Q\n");
-
-
+              logger("Fant Q");
                 keep_reading = 0;
+            }
+            else if ( in_c == 'O' || in_c == 'E') {
+              logger("Fant O eller E");
+
+              if ( (num_read = read(rpipe, &length, sizeof(length))) == -1 ) {
+                  perror("error reading from pipe in child");
+                  exit(EXIT_FAILURE);
+              }
+              else if ( num_read == 0 ) {
+                  printf("Pipe from parent closed to child %d.\n", child_id);
+                  keep_reading = 0;
+              }
+              else {
+                printf("Numread: %d, Child: %d funka, length = %d \n", num_read, child_id, length);
+
+                string = malloc(sizeof(char)*length);
+                free(string);
+
+                if ( (num_read = read(rpipe, &string, length)) == -1 ) {
+                    perror("error reading from pipe in child");
+                    exit(EXIT_FAILURE);
+                }
+                else if ( num_read == 0 ) {
+                    printf("Pipe from parent closed to child %d.\n", child_id);
+                    keep_reading = 0;
+                }
+                else {
+                  printf("%d, payload: %s\n", child_id, string);
+                }
+              }
+
             }
         }
     }
@@ -171,10 +202,10 @@ int main(void)  {
             return EXIT_FAILURE;
         }
         else if ( children[i] == 0 ) {
-            printf("Child %zu created.\n", i + 1);
+            printf("Child %d created.\n", i + 1);
             close_pair(ctop_fd[i][0], ptoc_fd[i][1]);
             child_func(ptoc_fd[i][0], ctop_fd[i][1], i + 1);
-            printf("Child %zu terminating.\n", i + 1);
+            printf("Child %d terminating.\n", i + 1);
             return EXIT_SUCCESS;
         }
         else {
@@ -185,45 +216,60 @@ int main(void)  {
 
     /*  Set up game variables and enter main loop  */
 
-    char out_c = 1;
-    char in_c = 0;
+
+
     int ferdig = 0;
-    char kommando = 'Q';
+    char kommando = 'O';
+    int length;
+    int i;
 
     while ( !ferdig ) {
 
       //Les kommando fra server
+      for (i = 0; i < 3; i++) {
+        if (kommando == 'O')  {
+          write(ptoc_fd[0][1], &kommando, 1);
+        }
+        else if (kommando == 'E') {
+          //send jobb til barn1
+          write(ptoc_fd[1][1], &kommando, 1);
+          length = strlen(data[0]);
+          printf("Fikk length: %d\n", length);
+          write(ptoc_fd[1][1], &length, sizeof(length));
+          write(ptoc_fd[1][1], &data[0], length);
+        }
+        else if (kommando == 'Q') {
+          write(ptoc_fd[0][1], &kommando, 1);
+          write(ptoc_fd[1][1], &kommando, 1);
+          //steng pipes til barn0 og barn1
+          ferdig = 1;
+        }
+        else {
+          perror("Ugyldig kommando.");
+        }
+
+        if (kommando == 'O')  {
+          kommando = 'E';
+        }
+        else if (kommando == 'E') {
+          kommando = 'Q';
+        }
+      }
 
 
-      if (kommando == 'O')  {
-        write(ptoc_fd[0][1], &kommando, 1);
-        //send jobb til barn0
-      }
-      else if (kommando == 'E') {
-        //send jobb til barn1
-      }
-      else if (kommando == 'Q') {
-        write(ptoc_fd[0][1], &kommando, 1);
-        write(ptoc_fd[1][1], &kommando, 1);
-        //steng pipes til barn0 og barn1
-        ferdig = 1;
-      }
-      else {
-        perror("Ugyldig kommando.");
-      }
 
 
       /*
-        for ( size_t i = 0; !ferdig && i < NUM_KIDS; ++i ) {
+        for ( int i = 0; !ferdig && i < NUM_KIDS; ++i ) {
 
 
 
-            if ( write(ptoc_fd[i][1], &out_c, 1) == -1 ) {
+            if ( write(ptoc_fd[i][1], & , 1) == -1 ) {
                 perror("error writing to pipe");
                 exit(EXIT_FAILURE);
             }
             else {
-                printf("Parent wrote %d to child %zu.\n", out_c, i+1);
+                printf("Parent wrote %d to child %d.\n", out_c, i+1);
             }
 
             ++out_c;
@@ -232,18 +278,18 @@ int main(void)  {
 
 
             if ( !ferdig ) {
-                ssize_t num_read;
+                int num_read;
                 if ( (num_read = read(ctop_fd[i][0], &in_c, 1)) == -1 ) {
                     perror("error reading from pipe");
                     return EXIT_FAILURE;
                 }
                 else if ( num_read == 0 ) {
-                    printf("Pipe from child %zu closed.\n", i+1);
+                    printf("Pipe from child %d closed.\n", i+1);
                 }
                 else {
-                    printf("Parent read %d from child %zu.\n", in_c, i+1);
+                    printf("Parent read %d from child %d.\n", in_c, i+1);
                     if ( in_c == CHILD_WIN ) {
-                        printf("Parent got ferdig signal from child %zu.\n", i+1);
+                        printf("Parent got ferdig signal from child %d.\n", i+1);
                         ferdig = 1;
                         winning_child = i+1;
                     }
@@ -255,17 +301,18 @@ int main(void)  {
 
     /*  Clean up and harvest dead children  */
 
-    out_c = 0;
-    for ( size_t i = 0; i < NUM_KIDS; ++i ) {
+
+    for ( int i = 0; i < NUM_KIDS; ++i ) {
         if ( waitpid(children[i], NULL, 0) == -1 ) {
             perror("error calling waitpid()");
             return EXIT_FAILURE;
         }
         else {
-            printf("Successfully waited for child %zu.\n", i);
+            printf("Successfully waited for child %d.\n", i);
         }
         close_pair(ptoc_fd[i][1], ctop_fd[i][0]);
     }
+    logger("main: end");
 
     return EXIT_SUCCESS;
 }
