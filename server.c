@@ -10,7 +10,7 @@
 
 int usage(int argc, char* argv[])  {
   if (argc < 3) {
-    printf("Usage: %s [serveraddr] [port]\n", argv[0]);
+    printf("Usage: %s [jobname] [port]\n", argv[0]);
     return 1;
   }
   return 0;
@@ -32,6 +32,7 @@ int get_port(char* port_as_string, unsigned short* port)  {
 
 
 int main(int argc, char* argv[]) {
+  /*
   if (usage(argc, argv))  {
     printf("Detected wrong usage. Exiting...\n");
     return EXIT_SUCCESS;
@@ -69,4 +70,12 @@ int main(int argc, char* argv[]) {
 
   close(sock);
   close(request_sock);
+  */
+  argc++;
+
+  char jobName[64];
+  strcpy(jobName, argv[1]);
+  printf("jobName: %s\n", jobName);
+  FILE* fptr;
+  fptr = fopen(jobName, "r");
 }

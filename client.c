@@ -215,11 +215,12 @@ int main()  {
     int i;
 
     while ( !ferdig ) {
-      //Les kommando fra server
+      /*
+      Les kommando fra server
+      */
 
 
-
-
+      
       for (i = 0; i < 3; i++) {
         if (kommando == 'O')  {
           write(ptoc_fd[0][1], &kommando, 1);
