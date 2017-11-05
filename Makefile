@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -Wpedantic -std=gnu99 -g
+CFLAGS = -Wall -Wextra -Wpedantic -std=gnu99 -g -Wno-gnu-zero-variadic-macro-arguments
 
 all: server client
 
