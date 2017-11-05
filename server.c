@@ -108,15 +108,15 @@ int main(int argc, char* argv[]) {
 
 
   char jobType;
+  int checksum;
+  int sum = 0;
   int jobLength;
   int lest;
   int i = 0;
 
   while (!feof(fptr))   {
-
-
-
     lest = fread(&jobType, sizeof(char), 1, fptr);
+
     if (lest != 1)  {
       MYLOG_DEBUG("fread failed, lest = %d, sizeof(char) = %d", lest, (int)sizeof(char));
       exit(EXIT_FAILURE);
@@ -128,8 +128,7 @@ int main(int argc, char* argv[]) {
       exit(EXIT_FAILURE);
     }
 
-    MYLOG_DEBUG("Jobtype: %c", jobType);
-    MYLOG_DEBUG("Joblength: %d", jobLength);
+
 
     char* jobString = malloc(sizeof(char)*jobLength);
     if (jobString == NULL)  {
@@ -142,8 +141,24 @@ int main(int argc, char* argv[]) {
       MYLOG_DEBUG("fread failed, jobLength = %d, lest = %d", jobLength, lest);
       exit(EXIT_FAILURE);
     }
-    
+
     MYLOG_DEBUG("jobString = %s", jobString);
+    for (i = 0; i < jobLength; i++) {
+      sum += jobString[i];
+    }
+    MYLOG_DEBUG("sum = %d", sum);
+    sum = sum % 32;
+    if (jobType == 'O') {
+      //For 'O': 3msb = 000
+      checksum = sum + 0;
+    }
+    else if (jobType == 'E')  {
+      //For 'E': 3msb = 001
+      checksum = sum + 32;
+    }
+    MYLOG_DEBUG("sum = %d, checksum = %d, jobtype = %c", sum, checksum, jobType);
+
+
     free(jobString);
     //jobString[jobLength] = '\0';
     //printf("Jobstring: %s\n", jobString);
