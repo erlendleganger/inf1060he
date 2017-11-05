@@ -101,6 +101,10 @@ int main(int argc, char* argv[]) {
   }
 
   fptr = fopen(pathJobFile, "r");
+  if (fptr == NULL) {
+    MYLOG_DEBUG("Klarte ikke aapne fil.");
+    exit(EXIT_FAILURE);
+  }
 
 
   char jobType;
@@ -112,8 +116,18 @@ int main(int argc, char* argv[]) {
 
 
 
-    fread(&jobType, sizeof(char), 1, fptr);
-    fread(&jobLength, sizeof(int), 1, fptr);
+    lest = fread(&jobType, sizeof(char), 1, fptr);
+    if (lest != 1)  {
+      MYLOG_DEBUG("fread failed, lest = %d, sizeof(char) = %d", lest, (int)sizeof(char));
+      exit(EXIT_FAILURE);
+    }
+
+    lest = fread(&jobLength, sizeof(int), 1, fptr);
+    if (lest != 1)  {
+      MYLOG_DEBUG("fread failed, lest = %d, sizeof(int) = %d", lest, (int)sizeof(int));
+      exit(EXIT_FAILURE);
+    }
+
     MYLOG_DEBUG("Jobtype: %c", jobType);
     MYLOG_DEBUG("Joblength: %d", jobLength);
 
@@ -122,12 +136,13 @@ int main(int argc, char* argv[]) {
       MYLOG_DEBUG("Malloc failed");
       exit(errno);
     }
-
-    lest = fread(&jobString, sizeof(char), jobLength, fptr);
+    MYLOG_DEBUG("Joblength: %d", jobLength);
+    lest = fread(jobString, sizeof(char), jobLength, fptr);
     if (lest != jobLength)  {
-      MYLOG_DEBUG("fread failed, lest = %d, jobLength = %d", lest, jobLength);
+      MYLOG_DEBUG("fread failed, jobLength = %d, lest = %d", jobLength, lest);
       exit(EXIT_FAILURE);
     }
+    
     MYLOG_DEBUG("jobString = %s", jobString);
     free(jobString);
     //jobString[jobLength] = '\0';
