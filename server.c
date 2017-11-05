@@ -118,6 +118,10 @@ int main(int argc, char* argv[]) {
     lest = fread(&jobType, sizeof(char), 1, fptr);
 
     if (lest != 1)  {
+      if (feof(fptr)) {
+        MYLOG_INFO("Done reading jobfile. Breaking...");
+        break;
+      }
       MYLOG_DEBUG("fread failed, lest = %d, sizeof(char) = %d", lest, (int)sizeof(char));
       exit(EXIT_FAILURE);
     }
@@ -130,17 +134,20 @@ int main(int argc, char* argv[]) {
 
 
 
-    char* jobString = malloc(sizeof(char)*jobLength);
+    char* jobString = malloc(sizeof(char)*(jobLength+1));
     if (jobString == NULL)  {
       MYLOG_DEBUG("Malloc failed");
       exit(errno);
     }
     MYLOG_DEBUG("Joblength: %d", jobLength);
     lest = fread(jobString, sizeof(char), jobLength, fptr);
+    MYLOG_DEBUG("feof: %d", feof(fptr));
+
     if (lest != jobLength)  {
       MYLOG_DEBUG("fread failed, jobLength = %d, lest = %d", jobLength, lest);
       exit(EXIT_FAILURE);
     }
+    jobString[jobLength] = '\0';
 
     MYLOG_DEBUG("jobString = %s", jobString);
     for (i = 0; i < jobLength; i++) {
