@@ -26,12 +26,11 @@ const char *data[] = {
 
 
 
-int usage(int argc, char*argv[])  {
+void usage(int argc, char*argv[])  {
   if (argc < 3) {
     printf("Usage: %s [serveraddr] [port]\n", argv[0]);
-    return -1;
+    exit(EXIT_FAILURE);
   }
-  return 0;
 }
 
 int get_port(char* port_as_string, unsigned short* port)  {
@@ -48,7 +47,7 @@ int get_port(char* port_as_string, unsigned short* port)  {
   }
 }
 
-
+/*
 int makeConnection(char* argv[]) {
 
   struct sockaddr_in serveraddr;
@@ -75,6 +74,7 @@ int makeConnection(char* argv[]) {
   close(sock);
   return EXIT_SUCCESS;
 }
+*/
 
 void logger(char* msg)  {
   if (loglevel != 0)  {
@@ -98,6 +98,7 @@ int spawn_child()  {
     return childPID;
   }
 }
+
 
 /*  Convenience function to make a pair of pipes  */
 void make_pipe_pair(int * pair1, int * pair2) {
@@ -184,8 +185,43 @@ void child_func(const int rpipe, const int wpipe, const int child_id){
 
 /*  Convenience function to close a pair of file descriptors  */
 
-int main()  {
+int main(int argc, char* argv[])  {
   logger("main: start");
+
+  //Deklarerer sockets
+  struct sockaddr_in serveraddr;
+  int sock;
+  unsigned short port;
+
+  sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); //FD for client-server
+  get_port(argv[2], &port);
+
+  memset(&serveraddr, 0, sizeof(serveraddr));
+  serveraddr.sin_family = AF_INET;
+  inet_pton(AF_INET, argv[1], &serveraddr);
+  serveraddr.sin_port = htons(port);
+
+  //Prover aa koble opp
+  connect(sock, (struct sockaddr *) &serveraddr, sizeof(serveraddr));
+  printf("Gjennomforte connect. Stenger etter input:\n");
+
+
+  char input[32];
+  scanf("%s", input);
+
+  close(sock);
+
+
+
+
+
+
+
+
+
+
+
+
 
     /*  Create pipe pairs and fork children  */
     for ( int i = 0; i < NUM_KIDS; ++i ) {
@@ -267,7 +303,6 @@ int main()  {
         }
         close_pair(ptoc_fd[i][1], ctop_fd[i][0]);
     }
-    
     logger("main: end");
     return EXIT_SUCCESS;
 }

@@ -37,11 +37,6 @@ int get_port(char* port_as_string, unsigned short* port)  {
 
 
 int main(int argc, char* argv[]) {
-  /*
-  if (usage(argc, argv))  {
-    printf("Detected wrong usage. Exiting...\n");
-    return EXIT_SUCCESS;
-  }
 
   //Deklarerte sockets
   struct sockaddr_in serveraddr;
@@ -71,11 +66,17 @@ int main(int argc, char* argv[]) {
   printf("Proever aa motta connection...\n");
 
   sock = accept(request_sock, (struct sockaddr *)&clientaddr, &clientaddrlen);
-  printf("Mottok connection! Stenger socket...\n");
+  MYLOG_DEBUG("fikk connection!");
 
-  close(sock);
-  close(request_sock);
-  */
+
+
+
+
+
+
+
+
+
   MYLOG_DEBUG("begin");
   strcpy(me, argv[0]);
 
@@ -88,7 +89,6 @@ int main(int argc, char* argv[]) {
   char portString[32];
   strcpy(pathJobFile, argv[1]);
   strcpy(portString, argv[2]);
-
 
 
 
@@ -171,6 +171,8 @@ int main(int argc, char* argv[]) {
     //printf("Jobstring: %s\n", jobString);
   }
   //send q-melding til client (bit-string: 1110 0000)
+  close(sock);
+  close(request_sock);
   MYLOG_DEBUG("end");
 
 }
