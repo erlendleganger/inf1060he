@@ -10,7 +10,7 @@
 #include <arpa/inet.h>
 
 #include "mylog.h"
-int MYLOGLEVEL=MYLOGLEVEL_TRACE;
+int MYLOGLEVEL = MYLOGLEVEL_DEBUG;
 
 char me[32];
 
@@ -29,7 +29,8 @@ int get_port(char* port_as_string, unsigned short* port)  {
     MYLOG_DEBUG("premature exit");
     exit(EXIT_FAILURE);
   }
-  MYLOG_DEBUG("end");
+
+  *port = (unsigned short) ret;
   return 0;
 
 }
@@ -80,7 +81,6 @@ int main(int argc, char* argv[]) {
 
 
   if (argc != 3)  {
-    printf("Feil antall parametere.\n");
     usage();
     exit(EXIT_FAILURE);
   }
@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
 
   fptr = fopen(pathJobFile, "r");
   if (fptr == NULL) {
-    MYLOG_DEBUG("Klarte ikke aapne fil.");
+    perror("Klarte ikke aapne fil\n");
     exit(EXIT_FAILURE);
   }
 
@@ -170,6 +170,7 @@ int main(int argc, char* argv[]) {
     //jobString[jobLength] = '\0';
     //printf("Jobstring: %s\n", jobString);
   }
+  //send q-melding til client (bit-string: 1110 0000)
   MYLOG_DEBUG("end");
 
 }

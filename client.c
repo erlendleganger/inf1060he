@@ -171,7 +171,6 @@ void child_func(const int rpipe, const int wpipe, const int child_id){
                   printf("%d, payload: %s\n", child_id, string);
                 }
               }
-
             }
         }
     }
@@ -220,7 +219,7 @@ int main()  {
       */
 
 
-      
+
       for (i = 0; i < 3; i++) {
         if (kommando == 'O')  {
           write(ptoc_fd[0][1], &kommando, 1);
@@ -268,6 +267,7 @@ int main()  {
         }
         close_pair(ptoc_fd[i][1], ctop_fd[i][0]);
     }
+    
     logger("main: end");
     return EXIT_SUCCESS;
 }
