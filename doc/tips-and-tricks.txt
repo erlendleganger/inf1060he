@@ -1,0 +1,12 @@
+# Command line tricks
+- Reverse incremental search: Ctrl-R, then type parts of the command
+- Jump to start of line: Ctrl-A (mnemonic: A for Anfang (German))
+- Jump to end of line: Ctrl-E (mnemonic: E for Ende (also German))
+- Use Tab for file name completion
+
+# History tricks
+- Show the command history:
+  history
+- Search for specific commands in history:
+  history | grep git
+
