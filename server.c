@@ -171,6 +171,11 @@ int main(int argc, char* argv[]) {
     //printf("Jobstring: %s\n", jobString);
   }
   //send q-melding til client (bit-string: 1110 0000)
+
+  char buffer[16];
+  bzero(buffer, 16);
+  read(sock, buffer, 16);
+  MYLOG_DEBUG("Buffer: %s", buffer);
   close(sock);
   close(request_sock);
   MYLOG_DEBUG("end");

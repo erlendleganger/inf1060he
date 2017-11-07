@@ -8,9 +8,12 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
+#include "mylog.h"
+
 #define NUM_KIDS 2
 
-int loglevel = 1;
+
+int MYLOGLEVEL = MYLOGLEVEL_DEBUG;
 int ptoc_fd[NUM_KIDS][2];   /*  Parent to child pipes    */
 int ctop_fd[NUM_KIDS][2];   /*  Child to parent pipes    */
 pid_t children[NUM_KIDS];   /*  Process IDs of children  */
@@ -76,25 +79,20 @@ int makeConnection(char* argv[]) {
 }
 */
 
-void logger(char* msg)  {
-  if (loglevel != 0)  {
-    printf(">%d< %s\n", getpid(), msg);
-  }
-}
 
 int spawn_child()  {
-  logger("spawn_child: start!");
+  MYLOG_DEBUG("start");
   pid_t childPID = fork();
   if (childPID == -1) {
     perror("fork() error!\n");
     exit(-1);
   }
   else if (childPID == 0) {
-    logger("spawn_child: end! (am child-process)");
+    MYLOG_DEBUG("spawn_child: end! (am child-process)");
     return 0;
   }
   else  {
-    logger("spawn_child: end! (am parent-process)");
+    MYLOG_DEBUG("spawn_child: end! (am parent-process)");
     return childPID;
   }
 }
@@ -140,11 +138,11 @@ void child_func(const int rpipe, const int wpipe, const int child_id){
             printf("Child %d read %c from parent.\n", child_id, in_c);
 
             if ( in_c == 'Q' ) {
-              logger("Fant Q");
+              MYLOG_DEBUG("Fant Q");
                 keep_reading = 0;
             }
             else if ( in_c == 'O' || in_c == 'E') {
-              logger("Fant O eller E");
+              MYLOG_DEBUG("Fant O eller E");
 
               if ( (num_read = read(rpipe, &length, sizeof(length))) == -1 ) {
                   perror("error reading from pipe in child");
@@ -185,9 +183,16 @@ void child_func(const int rpipe, const int wpipe, const int child_id){
 
 /*  Convenience function to close a pair of file descriptors  */
 
-int main(int argc, char* argv[])  {
-  logger("main: start");
 
+
+
+
+
+
+
+int main(int argc, char* argv[])  {
+  MYLOG_DEBUG("start");
+  MYLOG_DEBUG("%d", argc);
   //Deklarerer sockets
   struct sockaddr_in serveraddr;
   int sock;
@@ -206,8 +211,18 @@ int main(int argc, char* argv[])  {
   printf("Gjennomforte connect. Stenger etter input:\n");
 
 
-  char input[32];
+  char input[16];
+  bzero(input, 16);
   scanf("%s", input);
+  MYLOG_DEBUG("Du skrev: %s", input);
+  input[15] = '\0';
+
+  if ((write(sock, input, sizeof(char)*16)) < 0)  {
+    MYLOG_DEBUG("Error sending!");
+  }
+  else  {
+    MYLOG_DEBUG("Packet sent!");
+  }
 
   close(sock);
 
@@ -303,6 +318,6 @@ int main(int argc, char* argv[])  {
         }
         close_pair(ptoc_fd[i][1], ctop_fd[i][0]);
     }
-    logger("main: end");
+    MYLOG_DEBUG("main: end");
     return EXIT_SUCCESS;
 }
