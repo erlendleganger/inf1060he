@@ -223,6 +223,9 @@ int main(int argc, char* argv[])  {
   else  {
     MYLOG_DEBUG("Packet sent!");
   }
+  bzero(input, 16);
+  read(sock, input, 16);
+  printf("%s\n", input);
 
   close(sock);
 

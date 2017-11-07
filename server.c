@@ -176,6 +176,9 @@ int main(int argc, char* argv[]) {
   bzero(buffer, 16);
   read(sock, buffer, 16);
   MYLOG_DEBUG("Buffer: %s", buffer);
+  bzero(buffer, 16);
+  strcpy(buffer, "Mottatt!\0");
+  write(sock, buffer, 16);
   close(sock);
   close(request_sock);
   MYLOG_DEBUG("end");
