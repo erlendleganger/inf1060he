@@ -3,12 +3,14 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
 #include "mylog.h"
+#include "protocol.h"
 
 #define NUM_KIDS 2
 
@@ -189,12 +191,10 @@ void child_func(const int rpipe, const int wpipe, const int child_id){
 
 
 void mainMenu()  {
-  int input;
   printf("----------------------------------------\n");
   printf("Hovedmeny\n");
   printf("[1] Hent én jobb\n[2] Hent X antall jobber\n");
   printf("[3] Hent alle jobber\n[4] Avslutt\n");
-  scanf("%d", &input);
   /*
   while (input > 4 || input < 0)  {
     memset(input, 0, sizeof(int));
@@ -204,10 +204,26 @@ void mainMenu()  {
   */
 }
 
-void printSubMenu() {
+void subMenu() {
   printf("----------------------------------------\n");
   printf("Hvor mange jobber vil du hente?\n");
 }
+
+char * int2bin(int i) {
+    size_t bits = sizeof(int) * CHAR_BIT;
+
+    char * str = malloc(bits + 1);
+    if(!str) return NULL;
+    str[bits] = 0;
+
+    // type punning because signed shift is implementation-defined
+    unsigned u = *(unsigned *)&i;
+    for(; bits--; u >>= 1)
+        str[bits] = u & 1 ? '1' : '0';
+
+    return str;
+}
+
 
 int main(int argc, char* argv[])  {
   MYLOG_DEBUG("start");
@@ -226,10 +242,67 @@ int main(int argc, char* argv[])  {
   serveraddr.sin_port = htons(port);
 
   //Prover aa koble opp
-  connect(sock, (struct sockaddr *) &serveraddr, sizeof(serveraddr));
-  printf("Gjennomforte connect. Stenger etter input:\n");
+  //connect(sock, (struct sockaddr *) &serveraddr, sizeof(serveraddr));
+
+  int melding = 0;
+  char meldingString[64];
+
+  int input;
+  int antallJobber;
+  int ferdig = 0;
+  mainMenu();
+
+  while (!ferdig) {
+    scanf("%d", &input);
+    if (input == 1) {
+      melding = melding | 1<<28;
+      ferdig++;
+    }
+    else if (input == 2)  {
+      subMenu();
+      memset(&input, 0, sizeof(int));
 
 
+      while (!ferdig) {
+        scanf("%d", &input);
+        if (input == -1)  {
+          printf("Gaar tilbake...\n");
+          mainMenu();
+          break;
+        }
+        else if (input < -1){
+          printf("Ugyldig input. Proev igjen.\n");
+          MYLOG_DEBUG("Input: %d", input);
+          memset(&input, 0, sizeof(int));
+        }
+        else  {
+          melding = melding | 1<<27;
+          antallJobber = input;
+          memset(&input, 0, sizeof(int));
+          ferdig++;
+        }
+      }
+    }
+    else if (input == 3)  {
+      melding = melding | 1<<26;
+      ferdig++;
+    }
+    else if (input == 4)  {
+      melding = melding | 1<<31;
+      ferdig++;
+    }
+    else  {
+      printf("Ugyldig input. Proev igjen.\n");
+      MYLOG_DEBUG("Input: %d", input);
+      memset(&input, 0, sizeof(int));
+    }
+  }
+
+
+  MYLOG_DEBUG("Melding: %d", melding);
+  strcpy (meldingString, int2bin(melding));
+  MYLOG_DEBUG("Melding (binary): %s", meldingString);
+  /*
   char input[16];
   memset(input, 0, 16);
   mainMenu();
@@ -247,6 +320,7 @@ int main(int argc, char* argv[])  {
   memset(input, 0, 16);
   read(sock, input, 16);
   printf("%s\n", input);
+  */
 
   close(sock);
 
@@ -283,7 +357,7 @@ int main(int argc, char* argv[])  {
     }
     /*  Set up game variables and enter main loop  */
 
-    int ferdig = 0;
+    ferdig = 0;
     char kommando = 'O';
     int length;
     int i;
