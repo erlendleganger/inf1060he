@@ -206,7 +206,7 @@ void mainMenu()  {
 
 void subMenu() {
   printf("----------------------------------------\n");
-  printf("Hvor mange jobber vil du hente?\n");
+  printf("Hvor mange jobber vil du hente? (max: 16 777 215)\n(-1 for aa ga tilbake)\n");
 }
 
 char * int2bin(int i) {
@@ -270,7 +270,7 @@ int main(int argc, char* argv[])  {
           mainMenu();
           break;
         }
-        else if (input < -1){
+        else if (input < -1 || input > 16777215){
           printf("Ugyldig input. Proev igjen.\n");
           MYLOG_DEBUG("Input: %d", input);
           memset(&input, 0, sizeof(int));
@@ -278,6 +278,8 @@ int main(int argc, char* argv[])  {
         else  {
           melding = melding | 1<<27;
           antallJobber = input;
+          antallJobber = antallJobber & 16777215;
+          melding = melding | antallJobber;
           memset(&input, 0, sizeof(int));
           ferdig++;
         }
