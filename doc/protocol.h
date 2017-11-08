@@ -4,3 +4,4 @@
 #define GET_1_JOB_MASK 1<<28
 #define GET_X_JOB_MASK 1<<27
 #define GET_ALL_JOB_MASK 1<<26
+#define NUMBER_JOBS_MASK 16777215

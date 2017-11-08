@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <errno.h>
 
 #include <netinet/in.h>
@@ -10,7 +11,7 @@
 #include <arpa/inet.h>
 
 #include "mylog.h"
-int MYLOGLEVEL = MYLOGLEVEL_DEBUG;
+int MYLOGLEVEL = MYLOGLEVEL_INFO;
 
 char me[32];
 
@@ -35,6 +36,21 @@ int get_port(char* port_as_string, unsigned short* port)  {
 
 }
 
+char * int2bin(int i)
+{
+    size_t bits = sizeof(int) * CHAR_BIT;
+
+    char * str = malloc(bits + 1);
+    if(!str) return NULL;
+    str[bits] = 0;
+
+    // type punning because signed shift is implementation-defined
+    unsigned u = *(unsigned *)&i;
+    for(; bits--; u >>= 1)
+        str[bits] = u & 1 ? '1' : '0';
+
+    return str;
+}
 
 int main(int argc, char* argv[]) {
 
@@ -52,6 +68,7 @@ int main(int argc, char* argv[]) {
     printf("Failure to obtaion port. Exiting server...\n");
     return EXIT_SUCCESS;
   }
+
 
   request_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -171,14 +188,10 @@ int main(int argc, char* argv[]) {
     //printf("Jobstring: %s\n", jobString);
   }
   //send q-melding til client (bit-string: 1110 0000)
-
-  char buffer[16];
-  memset(buffer, 0, 16);
-  read(sock, buffer, 16);
-  MYLOG_DEBUG("Buffer: %s", buffer);
-  memset(buffer, 0, 16);
-  strcpy(buffer, "Mottatt!\0");
-  write(sock, buffer, 16);
+  int melding = 0;
+  read(sock, &melding, sizeof(int));
+  MYLOG_INFO("Melding: %d", melding);
+  MYLOG_INFO("Melding (binary): %s", int2bin(melding));
   close(sock);
   close(request_sock);
   MYLOG_DEBUG("end");

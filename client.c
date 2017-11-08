@@ -242,11 +242,10 @@ int main(int argc, char* argv[])  {
   serveraddr.sin_port = htons(port);
 
   //Prover aa koble opp
-  //connect(sock, (struct sockaddr *) &serveraddr, sizeof(serveraddr));
+  connect(sock, (struct sockaddr *) &serveraddr, sizeof(serveraddr));
 
   int melding = 0;
   char meldingString[64];
-
   int input;
   int antallJobber;
   int ferdig = 0;
@@ -299,6 +298,7 @@ int main(int argc, char* argv[])  {
       memset(&input, 0, sizeof(int));
     }
   }
+  write(sock, &melding, sizeof(int));
 
 
   MYLOG_DEBUG("Melding: %d", melding);
