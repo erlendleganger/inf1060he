@@ -188,7 +188,26 @@ void child_func(const int rpipe, const int wpipe, const int child_id){
 
 
 
+void mainMenu()  {
+  int input;
+  printf("----------------------------------------\n");
+  printf("Hovedmeny\n");
+  printf("[1] Hent én jobb\n[2] Hent X antall jobber\n");
+  printf("[3] Hent alle jobber\n[4] Avslutt\n");
+  scanf("%d", &input);
+  /*
+  while (input > 4 || input < 0)  {
+    memset(input, 0, sizeof(int));
+    printf("Ugyldig kommando. Proev igjen.\n");
+    scanf("%d", &input);
+  }
+  */
+}
 
+void printSubMenu() {
+  printf("----------------------------------------\n");
+  printf("Hvor mange jobber vil du hente?\n");
+}
 
 int main(int argc, char* argv[])  {
   MYLOG_DEBUG("start");
@@ -213,7 +232,9 @@ int main(int argc, char* argv[])  {
 
   char input[16];
   memset(input, 0, 16);
-  scanf("%s", input);
+  mainMenu();
+  fgets (input, 16, stdin);
+  input[strlen(input)-1] = '\0';
   MYLOG_DEBUG("Du skrev: %s", input);
   input[15] = '\0';
 
