@@ -55,8 +55,8 @@ int main() {
   }
 
   printf("Mammapid = %d\n", getpid());
+  printf("Start melding med 1 for aa sende til barn 1, 2 for aa sende til barn 2 (Q for quit), plz ikke ctrl-c, ellers blir det zombier :(\nInput: ");
   while (!ferdig) {
-    printf("Start melding med 1 for aa sende til barn 1, 2 for aa sende til barn 2 (Q for quit), plz ikke ctrl-c, ellers blir det zombier :(\nInput: ");
     fgets(input, 16, stdin);
     if (input[0] == '1')  {
       write(fd1[1], input, 16);
