@@ -173,10 +173,10 @@ int main(int argc, char* argv[]) {
   //send q-melding til client (bit-string: 1110 0000)
 
   char buffer[16];
-  bzero(buffer, 16);
+  memset(buffer, 0, 16);
   read(sock, buffer, 16);
   MYLOG_DEBUG("Buffer: %s", buffer);
-  bzero(buffer, 16);
+  memset(buffer, 0, 16);
   strcpy(buffer, "Mottatt!\0");
   write(sock, buffer, 16);
   close(sock);

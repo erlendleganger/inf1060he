@@ -212,7 +212,7 @@ int main(int argc, char* argv[])  {
 
 
   char input[16];
-  bzero(input, 16);
+  memset(input, 0, 16);
   scanf("%s", input);
   MYLOG_DEBUG("Du skrev: %s", input);
   input[15] = '\0';
@@ -223,7 +223,7 @@ int main(int argc, char* argv[])  {
   else  {
     MYLOG_DEBUG("Packet sent!");
   }
-  bzero(input, 16);
+  memset(input, 0, 16);
   read(sock, input, 16);
   printf("%s\n", input);
 
