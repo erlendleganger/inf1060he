@@ -246,16 +246,35 @@ int main(int argc, char* argv[])  {
 
   int melding = 0;
   char meldingString[64];
+
   int input;
   int antallJobber;
   int ferdig = 0;
+
+  char jobType;
+  int jobLength;
+  char* jobString;
+  int i = 0;
+
   mainMenu();
 
   while (!ferdig) {
     scanf("%d", &input);
     if (input == 1) {
       melding = melding | 1<<28;
-      ferdig++;
+      write(sock, &melding, sizeof(int));
+      MYLOG_DEBUG("Wrote to server: %s", int2bin(melding));
+      read(sock, &jobType, sizeof(char));
+      MYLOG_DEBUG("Jobtype = %c", jobType);
+
+      read(sock, &jobLength, sizeof(int));
+      MYLOG_DEBUG("Joblength = %d", jobLength);
+
+      jobString = malloc(sizeof(char)*jobLength);
+      read(sock, jobString, sizeof(char)*jobLength);
+      printf("%s\n", jobString);
+      free(jobString);
+
     }
     else if (input == 2)  {
       subMenu();
@@ -280,13 +299,13 @@ int main(int argc, char* argv[])  {
           antallJobber = antallJobber & 16777215;
           melding = melding | antallJobber;
           memset(&input, 0, sizeof(int));
-          ferdig++;
+
         }
       }
     }
     else if (input == 3)  {
       melding = melding | 1<<26;
-      ferdig++;
+      
     }
     else if (input == 4)  {
       melding = melding | 1<<31;
@@ -298,7 +317,6 @@ int main(int argc, char* argv[])  {
       memset(&input, 0, sizeof(int));
     }
   }
-  write(sock, &melding, sizeof(int));
 
 
   MYLOG_DEBUG("Melding: %d", melding);
@@ -362,7 +380,6 @@ int main(int argc, char* argv[])  {
     ferdig = 0;
     char kommando = 'O';
     int length;
-    int i;
 
     while ( !ferdig ) {
       /*

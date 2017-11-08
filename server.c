@@ -52,15 +52,24 @@ char * int2bin(int i)
     return str;
 }
 
-void tolk_melding(int* melding, int* antallJobber) {
+void tolk_melding(int* melding, int* antallJobber, int* sock, int* request_sock) {
   if (*melding & 1 << 31)  {
     MYLOG_DEBUG("Client stenger standard");
+    MYLOG_DEBUG("Stenger sockets...");
+    close(*sock);
+    close(*request_sock);
   }
   else if (*melding & 1 << 30) {
     MYLOG_DEBUG("Client stenger signal (CTRL + C)");
+    MYLOG_DEBUG("Stenger sockets...");
+    close(*sock);
+    close(*request_sock);
   }
   else if (*melding & 1 << 29) {
     MYLOG_DEBUG("Client stenger error");
+    MYLOG_DEBUG("Stenger sockets...");
+    close(*sock);
+    close(*request_sock);
   }
   else if (*melding & 1 << 28) {
     *antallJobber = 1;
@@ -74,6 +83,10 @@ void tolk_melding(int* melding, int* antallJobber) {
   else if (*melding & 1 << 26) {
     MYLOG_DEBUG("Henter alle jobber...");
     *antallJobber = -1;
+  }
+  else if (*melding == 0) {
+    MYLOG_DEBUG("Fikk 0-melding. Avslutter...");
+    exit(EXIT_SUCCESS);
   }
 }
 
@@ -157,73 +170,85 @@ int main(int argc, char* argv[]) {
   int jobLength;
   int lest;
   int i = 0;
+  int ferdig = 0;
 
-  while (!feof(fptr))   {
-    lest = fread(&jobType, sizeof(char), 1, fptr);
+  while (!ferdig) {
+    int melding = 0;
+    int antallJobber = 0;
+    MYLOG_DEBUG("Prover aa lese...");
+    MYLOG_DEBUG("melding = %d, antallJobber = %d", melding, antallJobber);
+    read(sock, &melding, sizeof(int));
+    MYLOG_DEBUG("Melding = %d", melding);
+    MYLOG_DEBUG("Melding (binary) = %s", int2bin(melding));
+    tolk_melding(&melding, &antallJobber, &sock, &request_sock);
+    MYLOG_DEBUG("Antall jobber =  %d", antallJobber);
 
-    if (lest != 1)  {
-      if (feof(fptr)) {
-        MYLOG_INFO("Done reading jobfile. Breaking...");
-        break;
+    while (antallJobber)   {
+      lest = fread(&jobType, sizeof(char), 1, fptr);
+
+      if (lest != 1)  {
+        if (feof(fptr)) {
+          MYLOG_INFO("Done reading jobfile. Breaking...");
+          ferdig++;
+          break;
+        }
+        MYLOG_DEBUG("fread failed, lest = %d, sizeof(char) = %d", lest, (int)sizeof(char));
+        exit(EXIT_FAILURE);
       }
-      MYLOG_DEBUG("fread failed, lest = %d, sizeof(char) = %d", lest, (int)sizeof(char));
-      exit(EXIT_FAILURE);
+
+
+      lest = fread(&jobLength, sizeof(int), 1, fptr);
+      if (lest != 1)  {
+        MYLOG_DEBUG("fread failed, lest = %d, sizeof(int) = %d", lest, (int)sizeof(int));
+        exit(EXIT_FAILURE);
+      }
+
+
+
+      char* jobString = malloc(sizeof(char)*(jobLength+1));
+      if (jobString == NULL)  {
+        MYLOG_DEBUG("Malloc failed");
+        exit(errno);
+      }
+      MYLOG_DEBUG("Joblength: %d", jobLength);
+      lest = fread(jobString, sizeof(char), jobLength, fptr);
+      MYLOG_DEBUG("feof: %d", feof(fptr));
+
+      if (lest != jobLength)  {
+        MYLOG_DEBUG("fread failed, jobLength = %d, lest = %d", jobLength, lest);
+        exit(EXIT_FAILURE);
+      }
+      jobString[jobLength] = '\0';
+
+      MYLOG_DEBUG("jobString = %s", jobString);
+      for (i = 0; i < jobLength; i++) {
+        sum += jobString[i];
+      }
+      MYLOG_DEBUG("sum = %d", sum);
+      sum = sum % 32;
+      if (jobType == 'O') {
+        //For 'O': 3msb = 000
+        checksum = sum + 0;
+      }
+      else if (jobType == 'E')  {
+        //For 'E': 3msb = 001
+        checksum = sum + 32;
+      }
+      MYLOG_DEBUG("sum = %d, checksum = %d, jobtype = %c", sum, checksum, jobType);
+
+      write(sock, &jobType, sizeof(char));
+      write(sock, &jobLength, sizeof(int));
+      write(sock, jobString, sizeof(char)*jobLength);
+      free(jobString);
+      antallJobber--;
+      //jobString[jobLength] = '\0';
+      //printf("Jobstring: %s\n", jobString);
     }
 
-    lest = fread(&jobLength, sizeof(int), 1, fptr);
-    if (lest != 1)  {
-      MYLOG_DEBUG("fread failed, lest = %d, sizeof(int) = %d", lest, (int)sizeof(int));
-      exit(EXIT_FAILURE);
-    }
-
-
-
-    char* jobString = malloc(sizeof(char)*(jobLength+1));
-    if (jobString == NULL)  {
-      MYLOG_DEBUG("Malloc failed");
-      exit(errno);
-    }
-    MYLOG_DEBUG("Joblength: %d", jobLength);
-    lest = fread(jobString, sizeof(char), jobLength, fptr);
-    MYLOG_DEBUG("feof: %d", feof(fptr));
-
-    if (lest != jobLength)  {
-      MYLOG_DEBUG("fread failed, jobLength = %d, lest = %d", jobLength, lest);
-      exit(EXIT_FAILURE);
-    }
-    jobString[jobLength] = '\0';
-
-    MYLOG_DEBUG("jobString = %s", jobString);
-    for (i = 0; i < jobLength; i++) {
-      sum += jobString[i];
-    }
-    MYLOG_DEBUG("sum = %d", sum);
-    sum = sum % 32;
-    if (jobType == 'O') {
-      //For 'O': 3msb = 000
-      checksum = sum + 0;
-    }
-    else if (jobType == 'E')  {
-      //For 'E': 3msb = 001
-      checksum = sum + 32;
-    }
-    MYLOG_DEBUG("sum = %d, checksum = %d, jobtype = %c", sum, checksum, jobType);
-
-
-    free(jobString);
-    //jobString[jobLength] = '\0';
-    //printf("Jobstring: %s\n", jobString);
   }
-  //send q-melding til client (bit-string: 1110 0000)
-  int melding = 0;
-  int antallJobber = 0;
-  read(sock, &melding, sizeof(int));
-  MYLOG_DEBUG("Melding = %d", melding);
-  MYLOG_DEBUG("Melding (binary) = %s", int2bin(melding));
-  tolk_melding(&melding, &antallJobber);
-  MYLOG_DEBUG("Antall jobber =  %d", antallJobber);
   close(sock);
   close(request_sock);
-  MYLOG_DEBUG("end");
+  //send q-melding til client (bit-string: 1110 0000)
+
 
 }
