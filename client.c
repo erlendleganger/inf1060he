@@ -251,7 +251,9 @@ int main(int argc, char* argv[])  {
   int antallJobber;
   int ferdig = 0;
 
+  char jobInfo;
   char jobType;
+  char checksum;
   int jobLength;
   char* jobString;
   int i = 0;
@@ -264,8 +266,12 @@ int main(int argc, char* argv[])  {
       melding = melding | 1<<28;
       write(sock, &melding, sizeof(int));
       MYLOG_DEBUG("Wrote to server: %s", int2bin(melding));
-      read(sock, &jobType, sizeof(char));
-      MYLOG_DEBUG("Jobtype = %c", jobType);
+      read(sock, &jobInfo, sizeof(char));
+      MYLOG_DEBUG("JobInfo = %c", jobInfo);
+      jobType = jobInfo & 224;
+      checksum = jobInfo & 31;
+      MYLOG_DEBUG("jobType = %d", (int)jobType);
+      MYLOG_DEBUG("checksum = %d", (int)checksum);
 
       read(sock, &jobLength, sizeof(int));
       MYLOG_DEBUG("Joblength = %d", jobLength);
@@ -305,7 +311,7 @@ int main(int argc, char* argv[])  {
     }
     else if (input == 3)  {
       melding = melding | 1<<26;
-      
+
     }
     else if (input == 4)  {
       melding = melding | 1<<31;

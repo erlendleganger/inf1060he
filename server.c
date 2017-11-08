@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
 
 
   char jobType;
-  int checksum;
+  char checksum;
   int sum = 0;
   int jobLength;
   int lest;
@@ -236,7 +236,7 @@ int main(int argc, char* argv[]) {
       }
       MYLOG_DEBUG("sum = %d, checksum = %d, jobtype = %c", sum, checksum, jobType);
 
-      write(sock, &jobType, sizeof(char));
+      write(sock, &checksum, sizeof(char));
       write(sock, &jobLength, sizeof(int));
       write(sock, jobString, sizeof(char)*jobLength);
       free(jobString);
