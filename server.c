@@ -11,7 +11,7 @@
 #include <arpa/inet.h>
 
 #include "mylog.h"
-int MYLOGLEVEL = MYLOGLEVEL_INFO;
+int MYLOGLEVEL = MYLOGLEVEL_DEBUG;
 
 char me[32];
 
@@ -51,6 +51,33 @@ char * int2bin(int i)
 
     return str;
 }
+
+void tolk_melding(int* melding, int* antallJobber) {
+  if (*melding & 1 << 31)  {
+    MYLOG_DEBUG("Client stenger standard");
+  }
+  else if (*melding & 1 << 30) {
+    MYLOG_DEBUG("Client stenger signal (CTRL + C)");
+  }
+  else if (*melding & 1 << 29) {
+    MYLOG_DEBUG("Client stenger error");
+  }
+  else if (*melding & 1 << 28) {
+    *antallJobber = 1;
+    MYLOG_DEBUG("Henter 1 sender 1 jobb...");
+  }
+  else if (*melding & 1 << 27) {
+    MYLOG_DEBUG("Henter X jobber...");
+    *antallJobber = *melding & 16777215;
+    MYLOG_DEBUG("Antall jobber = %d", *antallJobber);
+  }
+  else if (*melding & 1 << 26) {
+    MYLOG_DEBUG("Henter alle jobber...");
+    *antallJobber = -1;
+  }
+}
+
+
 
 int main(int argc, char* argv[]) {
 
@@ -189,9 +216,12 @@ int main(int argc, char* argv[]) {
   }
   //send q-melding til client (bit-string: 1110 0000)
   int melding = 0;
+  int antallJobber = 0;
   read(sock, &melding, sizeof(int));
-  MYLOG_INFO("Melding: %d", melding);
-  MYLOG_INFO("Melding (binary): %s", int2bin(melding));
+  MYLOG_DEBUG("Melding = %d", melding);
+  MYLOG_DEBUG("Melding (binary) = %s", int2bin(melding));
+  tolk_melding(&melding, &antallJobber);
+  MYLOG_DEBUG("Antall jobber =  %d", antallJobber);
   close(sock);
   close(request_sock);
   MYLOG_DEBUG("end");
