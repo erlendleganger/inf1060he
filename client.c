@@ -268,9 +268,21 @@ int main(int argc, char* argv[])  {
       MYLOG_DEBUG("Wrote to server: %s", int2bin(melding));
       read(sock, &jobInfo, sizeof(char));
       MYLOG_DEBUG("JobInfo = %c", jobInfo);
-      jobType = jobInfo & 224;
+
+      if ((jobInfo & 224) == 32) {
+        MYLOG_DEBUG("Fant jobType 'E'");
+        jobType = 'E';
+      }
+      else if ((jobInfo & 224) == 0) {
+        MYLOG_DEBUG("Fant jobType 'O'");
+        jobType = 'O';
+      }
+      else if ((jobInfo & 224) == 224) {
+        MYLOG_DEBUG("Fant jobType 'Q'");
+        jobType = 'Q';
+      }
       checksum = jobInfo & 31;
-      MYLOG_DEBUG("jobType = %d", (int)jobType);
+      MYLOG_DEBUG("jobType = %c", jobType);
       MYLOG_DEBUG("checksum = %d", (int)checksum);
 
       read(sock, &jobLength, sizeof(int));
@@ -280,8 +292,12 @@ int main(int argc, char* argv[])  {
       read(sock, jobString, sizeof(char)*jobLength);
       printf("%s\n", jobString);
       free(jobString);
-
     }
+
+
+
+
+
     else if (input == 2)  {
       subMenu();
       memset(&input, 0, sizeof(int));
@@ -301,11 +317,40 @@ int main(int argc, char* argv[])  {
         }
         else  {
           melding = melding | 1<<27;
-          antallJobber = input;
-          antallJobber = antallJobber & 16777215;
+          antallJobber = (input & 16777215);
           melding = melding | antallJobber;
           memset(&input, 0, sizeof(int));
 
+          
+          write(sock, &melding, sizeof(int));
+          for (i = 0; i < antallJobber; i++)  {
+            read(sock, &jobInfo, sizeof(char));
+            MYLOG_DEBUG("JobInfo = %c", jobInfo);
+
+            if ((jobInfo & 224) == 32) {
+              MYLOG_DEBUG("Fant jobType 'E'");
+              jobType = 'E';
+            }
+            else if ((jobInfo & 224) == 0) {
+              MYLOG_DEBUG("Fant jobType 'O'");
+              jobType = 'O';
+            }
+            else if ((jobInfo & 224) == 224) {
+              MYLOG_DEBUG("Fant jobType 'Q'");
+              jobType = 'Q';
+            }
+            checksum = jobInfo & 31;
+            MYLOG_DEBUG("jobType = %c", jobType);
+            MYLOG_DEBUG("checksum = %d", (int)checksum);
+
+            read(sock, &jobLength, sizeof(int));
+            MYLOG_DEBUG("Joblength = %d", jobLength);
+
+            jobString = malloc(sizeof(char)*jobLength);
+            read(sock, jobString, sizeof(char)*jobLength);
+            printf("%s\n", jobString);
+            free(jobString);
+          }
         }
       }
     }
