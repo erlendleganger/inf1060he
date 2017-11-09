@@ -18,17 +18,6 @@
 int MYLOGLEVEL = MYLOGLEVEL_DEBUG;
 
 
-
-const char *data[] = {
-  "Jeg er streng0",
-  "Jeg er streng1",
-  "Jeg er streng2"
-};
-
-
-
-
-
 void usage(int argc, char*argv[])  {
   if (argc < 3) {
     printf("Usage: %s [serveraddr] [port]\n", argv[0]);
@@ -123,35 +112,55 @@ int main(int argc, char* argv[])  {
   int jobLength;
   char* jobString;
   int i = 0;
+  int loopTall = 0;
 
-
+  MYLOG_DEBUG("Caller fork1");
   pid = fork();
 
 
   //Kode for barn1
   if (pid == 0) {
     while(1)  {
-      //Kode
+      MYLOG_DEBUG("Child 1 begynner read...");
+      read(fd1[0], &jobLength, sizeof(int));
+      MYLOG_DEBUG("jobLength = %d", jobLength);
+      jobString = malloc(sizeof(char)*(jobLength+1));
+      read(fd1[0], jobString, sizeof(char)*jobLength);
+      jobString[jobLength] = '\0';
+      //printf("%s\n", jobString);
+      MYLOG_DEBUG("Printet til stdout: %s", jobString);
+      memset(&jobLength, 0, sizeof(int));
+      free(jobString);
     }
     close(fd1[0]); close(fd1[1]);
   }
 
 
+  MYLOG_DEBUG("Caller fork2");
   pid = fork();
 
   //Kode for barn2
   if (pid == 0) {
     while(1)  {
-      //Kode
+      MYLOG_DEBUG("Child 2 begynner read...");
       read(fd2[0], &jobLength, sizeof(int));
+      MYLOG_DEBUG("Looptall = %d", loopTall);
+      loopTall++;
+      MYLOG_DEBUG("jobLength = %d", jobLength);
       jobString = malloc(sizeof(char)*(jobLength+1));
+      read(fd2[0], jobString, sizeof(char)*jobLength);
+      jobString[jobLength] = '\0';
+      //fprintf(stderr,"%s\n", jobString);
+      MYLOG_DEBUG("Printet til stderr: %s", jobString)
+      memset(&jobLength, 0, sizeof(int));
+      memset(&jobString, 0, (sizeof(char)*(jobLength+1)));
 
     }
     close(fd2[0]); close(fd2[1]);
   }
 
   //Stenger read-enden av pipen til mammaprosessen
-  close(fd1[0]); close(fd2[0]);
+  //close(fd1[0]); close(fd2[0]);
 
 
   mainMenu();
@@ -163,15 +172,20 @@ int main(int argc, char* argv[])  {
       write(sock, &melding, sizeof(int));
       MYLOG_DEBUG("Wrote to server: %s", int2bin(melding));
       read(sock, &jobInfo, sizeof(char));
-      MYLOG_DEBUG("JobInfo = %c", jobInfo);
+      read(sock, &jobLength, sizeof(int));
+      read(sock, jobString, sizeof(char)*jobLength);
 
       if ((jobInfo & 224) == 32) {
         MYLOG_DEBUG("Fant jobType 'E'");
-        jobType = 'E';
+        MYLOG_DEBUG("jobLength = %d", jobLength);
+        write(fd2[1], &jobLength, sizeof(int));
+        write(fd2[1], jobString, sizeof(char)*jobLength);
       }
       else if ((jobInfo & 224) == 0) {
         MYLOG_DEBUG("Fant jobType 'O'");
-        jobType = 'O';
+        MYLOG_DEBUG("jobLength = %d", jobLength);
+        write(fd1[1], &jobLength, sizeof(int));
+        write(fd1[1], jobString, sizeof(char)*jobLength);
       }
       else if ((jobInfo & 224) == 224) {
         MYLOG_DEBUG("Fant jobType 'Q'");
@@ -179,16 +193,7 @@ int main(int argc, char* argv[])  {
       }
       checksum = jobInfo & 31;
       MYLOG_DEBUG("jobType = %c", jobType);
-      MYLOG_DEBUG("checksum = %d", (int)checksum);
-
-      read(sock, &jobLength, sizeof(int));
-      MYLOG_DEBUG("Joblength = %d", jobLength);
-
-      jobString = malloc(sizeof(char)*jobLength);
-      read(sock, jobString, sizeof(char)*jobLength);
-      printf("%s\n", jobString);
       memset(&melding, 0, sizeof(int));
-      free(jobString);
     }
 
 
@@ -244,8 +249,10 @@ int main(int argc, char* argv[])  {
 
             jobString = malloc(sizeof(char)*jobLength);
             read(sock, jobString, sizeof(char)*jobLength);
+            /*
             printf("%s\n", jobString);
             free(jobString);
+            */
           }
         }
       }
