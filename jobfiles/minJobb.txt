@@ -1,0 +1,6 @@
+Hei, dette er min jobbfil. Jeg har laget denne for aa
+teste testcases mot slutten av filen
+(naar server skal sende 'Q'-melding). For at dette skal kjøre må jeg først
+skrive tekstfilen (sånn som jeg gjør nu), for deretter å kjøre den gjennom
+et program som fulgte med hjemmeeksamen når jeg lastet den ned fra github. Jeg
+håper dette funker...
