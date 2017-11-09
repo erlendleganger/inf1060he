@@ -58,18 +58,22 @@ void tolk_melding(int* melding, int* antallJobber, int* sock, int* request_sock)
     MYLOG_DEBUG("Stenger sockets...");
     close(*sock);
     close(*request_sock);
+    exit(EXIT_SUCCESS);
   }
   else if (*melding & 1 << 30) {
     MYLOG_DEBUG("Client stenger signal (CTRL + C)");
     MYLOG_DEBUG("Stenger sockets...");
     close(*sock);
     close(*request_sock);
+    exit(EXIT_SUCCESS);
   }
   else if (*melding & 1 << 29) {
     MYLOG_DEBUG("Client stenger error");
     MYLOG_DEBUG("Stenger sockets...");
     close(*sock);
     close(*request_sock);
+    exit(EXIT_SUCCESS);
+
   }
   else if (*melding & 1 << 28) {
     *antallJobber = 1;
@@ -188,7 +192,10 @@ int main(int argc, char* argv[]) {
 
       if (lest != 1)  {
         if (feof(fptr)) {
-          MYLOG_INFO("Done reading jobfile. Breaking...");
+          MYLOG_INFO("Done reading jobfile. Sending 'Q'-job to client...");
+          memset(&checksum, 0, sizeof(char));
+          checksum = checksum | 224;
+          write(sock, &checksum, sizeof(char));
           ferdig++;
           break;
         }

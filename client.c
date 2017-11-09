@@ -15,7 +15,7 @@
 #define NUM_KIDS 2
 
 
-int MYLOGLEVEL = MYLOGLEVEL_DEBUG;
+int MYLOGLEVEL = 0;
 
 
 void usage(int argc, char*argv[])  {
@@ -112,7 +112,6 @@ int main(int argc, char* argv[])  {
   int jobLength;
   char* jobString;
   int i = 0;
-  int loopTall = 0;
 
   MYLOG_DEBUG("Caller fork1");
   pid = fork();
@@ -121,18 +120,22 @@ int main(int argc, char* argv[])  {
   //Kode for barn1
   if (pid == 0) {
     while(1)  {
-      MYLOG_DEBUG("Child 1 begynner read...");
       read(fd1[0], &jobLength, sizeof(int));
       MYLOG_DEBUG("jobLength = %d", jobLength);
+      if (jobLength == 0) {
+        MYLOG_DEBUG("Mottok Q-jobb. Avslutter dette barnet...");
+        break;
+      }
       jobString = malloc(sizeof(char)*(jobLength+1));
       read(fd1[0], jobString, sizeof(char)*jobLength);
       jobString[jobLength] = '\0';
-      //printf("%s\n", jobString);
-      MYLOG_DEBUG("Printet til stdout: %s", jobString);
+      printf("%s\n", jobString);
+      //MYLOG_DEBUG("Printet til stdout: %s", jobString);
       memset(&jobLength, 0, sizeof(int));
       free(jobString);
     }
     close(fd1[0]); close(fd1[1]);
+    exit(EXIT_SUCCESS);
   }
 
 
@@ -142,21 +145,23 @@ int main(int argc, char* argv[])  {
   //Kode for barn2
   if (pid == 0) {
     while(1)  {
-      MYLOG_DEBUG("Child 2 begynner read...");
       read(fd2[0], &jobLength, sizeof(int));
-      MYLOG_DEBUG("Looptall = %d", loopTall);
-      loopTall++;
       MYLOG_DEBUG("jobLength = %d", jobLength);
+      if (jobLength == 0) {
+        MYLOG_DEBUG("Mottok Q-jobb. Avslutter dette barnet...");
+        break;
+      }
       jobString = malloc(sizeof(char)*(jobLength+1));
       read(fd2[0], jobString, sizeof(char)*jobLength);
       jobString[jobLength] = '\0';
-      //fprintf(stderr,"%s\n", jobString);
-      MYLOG_DEBUG("Printet til stderr: %s", jobString)
+      fprintf(stderr,"%s\n", jobString);
+      //MYLOG_DEBUG("Printet til stderr: %s", jobString)
       memset(&jobLength, 0, sizeof(int));
       memset(&jobString, 0, (sizeof(char)*(jobLength+1)));
 
     }
     close(fd2[0]); close(fd2[1]);
+    exit(EXIT_SUCCESS);
   }
 
   //Stenger read-enden av pipen til mammaprosessen
@@ -190,6 +195,9 @@ int main(int argc, char* argv[])  {
       else if ((jobInfo & 224) == 224) {
         MYLOG_DEBUG("Fant jobType 'Q'");
         jobType = 'Q';
+        write(fd1[1], 0, sizeof(int));
+        write(fd2[1], 0, sizeof(int));
+        break;
       }
       checksum = jobInfo & 31;
       MYLOG_DEBUG("jobType = %c", jobType);
@@ -263,6 +271,7 @@ int main(int argc, char* argv[])  {
     }
     else if (input == 4)  {
       melding = melding | 1<<31;
+      write(sock, &melding, sizeof(int));
       ferdig++;
     }
     else  {
