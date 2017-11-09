@@ -171,10 +171,10 @@ int main(int argc, char* argv[]) {
   int lest;
   int i = 0;
   int ferdig = 0;
+  int melding = 0;
+  int antallJobber = 0;
 
   while (!ferdig) {
-    int melding = 0;
-    int antallJobber = 0;
     MYLOG_DEBUG("Prover aa lese...");
     MYLOG_DEBUG("melding = %d, antallJobber = %d", melding, antallJobber);
     read(sock, &melding, sizeof(int));
