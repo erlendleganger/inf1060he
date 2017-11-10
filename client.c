@@ -15,7 +15,7 @@
 #define NUM_KIDS 2
 
 
-int MYLOGLEVEL = 0;
+int MYLOGLEVEL = MYLOGLEVEL_DEBUG;
 
 
 void usage(int argc, char*argv[])  {
@@ -111,6 +111,7 @@ int main(int argc, char* argv[])  {
   char checksum;
   int jobLength;
   char* jobString;
+  int sum = 0;
   int i = 0;
 
   MYLOG_DEBUG("Caller fork1");
@@ -179,6 +180,18 @@ int main(int argc, char* argv[])  {
       read(sock, &jobInfo, sizeof(char));
       read(sock, &jobLength, sizeof(int));
       read(sock, jobString, sizeof(char)*jobLength);
+
+      sum = 0;
+      for (i = 0; i < jobLength; i++) {
+        sum += jobString[i];
+      }
+      sum = sum % 32;
+      if (sum == (jobInfo & 31))  {
+        MYLOG_DEBUG("Checksum matchet");
+      }
+      else  {
+        MYLOG_DEBUG("Checksum matchet ikke! Client sum = %d, Server sum = %d", sum, (jobInfo & 31));
+      }
 
       if ((jobInfo & 224) == 32) {
         MYLOG_DEBUG("Fant jobType 'E'");
@@ -279,6 +292,7 @@ int main(int argc, char* argv[])  {
       MYLOG_DEBUG("Input: %d", input);
       memset(&input, 0, sizeof(int));
     }
+    jobLength = 0;
   }
 
 

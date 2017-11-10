@@ -247,15 +247,14 @@ int main(int argc, char* argv[]) {
       write(sock, &jobLength, sizeof(int));
       write(sock, jobString, sizeof(char)*jobLength);
       free(jobString);
+      sum = 0; checksum = 0;
       antallJobber--;
       //jobString[jobLength] = '\0';
       //printf("Jobstring: %s\n", jobString);
     }
-
   }
+
   close(sock);
   close(request_sock);
   //send q-melding til client (bit-string: 1110 0000)
-
-
 }
